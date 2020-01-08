@@ -1,0 +1,375 @@
+import os
+import math
+import pandas as pd
+
+from kivy.app import App
+from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.togglebutton import ToggleButton
+from kivy.core.window import Window
+
+from dotenv import load_dotenv
+from pathlib import Path
+from base64 import b64encode
+from datetime import date
+
+class LoginScreen(Screen):
+
+    def __init__(self, **kwargs):
+        super(LoginScreen, self).__init__(**kwargs)
+        Window.size = (600, 300)
+
+        # attach grid_layout on screen
+        self.grid_layout = GridLayout(cols=2)
+        self.add_widget(self.grid_layout)
+
+        # attach username_label on grid_layout
+        self.username_label = Label(text='User Name')
+        self.grid_layout.add_widget(self.username_label)
+
+        # attach username text value on grid_layout
+        self.grid_layout.username = TextInput(multiline=False)
+        self.grid_layout.add_widget(self.grid_layout.username)
+
+        # attach password_label on grid_layout
+        self.password_label = Label(text='Password')
+        self.grid_layout.add_widget(self.password_label)
+
+        # attach password text value on grid_layout
+        self.grid_layout.password = TextInput(password=True, multiline=False)
+        self.grid_layout.add_widget(self.grid_layout.password)
+
+        # attach reset_button on grid_layout
+        self.reset_button = Button(text='Reset')
+        self.grid_layout.add_widget(self.reset_button)
+        self.reset_button.bind(on_press = self.reset)
+
+        # attach confirm_button on grid_layout
+        self.confirm_button = Button(text='Confirm')
+        self.grid_layout.add_widget(self.confirm_button)
+        self.confirm_button.bind(on_press = self.authenticate)
+
+    # callback methods here
+
+    def reset(self, instance):
+        self.grid_layout.username.text = ""
+        self.grid_layout.password.text = ""
+
+    def authenticate(self, instance):
+        self.check(self.grid_layout.username.text, self.grid_layout.password.text)
+
+    def check(self, username, password):
+        true_username = os.getenv("USER_NAME")[4:]
+        true_password = os.getenv("PASSWORD")[4:]
+
+        encoded_username = str(b64encode(username.encode("utf-8")), "utf-8")
+        encoded_password = str(b64encode(password.encode("utf-8")), "utf-8")
+
+        if encoded_username == true_username and encoded_password == true_password:
+            print('Authentication successful!')
+
+            # open MainScreen
+            Window.size = (900, 700)
+            self.manager.transition.direction = "right"
+            self.manager.current = "main_screen"
+
+        else:
+            print('Wrong Username and/or Password!')
+            self.reset(instance)
+
+
+class MainScreen(Screen):
+
+    def __init__(self, **kwargs):
+        super(MainScreen, self).__init__(**kwargs)
+
+        # initialize the following property values
+        self.data_path = Path("data")
+        self.date = date.today().strftime("%d %B %Y")
+        self.index = 1
+        print('Initializing system for today: {}'.format(self.date))
+        print('Data storage path: {}'.format(self.data_path))
+
+        # the following property values
+        self.batch = 0
+        self.rounded_batch = 0
+        self.option = 0
+        self.option_price = 0
+        self.total_price_value = 0
+        self.return_value = 0
+        print('Completed Intialization.')
+
+        # attach grid_layout on screen
+        self.grid_layout = GridLayout(cols=2)
+        self.add_widget(self.grid_layout)
+
+        # attach index_label on grid_layout
+        self.index_label = Label(text="Customer No. {}".format(self.index))
+        self.grid_layout.add_widget(self.index_label)
+
+        # attach exit_button on grid_layout
+        self.exit_button = Button(text='Exit')
+        self.grid_layout.add_widget(self.exit_button)
+        self.exit_button.bind(on_press = self.exit)
+
+        # attach name_label on grid_layout
+        self.name_label = Label(text='Customer Name (Nama Pelanggan)')
+        self.grid_layout.add_widget(self.name_label)
+
+        # attach name text value on grid_layout
+        self.grid_layout.name = TextInput(multiline=False)
+        self.grid_layout.add_widget(self.grid_layout.name)
+
+        # attach weight_label on grid_layout
+        self.weight_label = Label(text='Weight (Berat) /kg')
+        self.grid_layout.add_widget(self.weight_label)
+
+        # attach weight text value on grid_layout + bind a callback to it
+        self.grid_layout.weight = TextInput(multiline=False, input_filter="float", hint_text="20.7")
+        self.grid_layout.add_widget(self.grid_layout.weight)
+        self.grid_layout.weight.bind(text = self.show_batch_value)
+
+        # attach batch_label on grid_layout
+        self.batch_label = Label(text='Batch (Tabung) - per {} kg'.format(os.getenv("BATCH_LIMIT")))
+        self.grid_layout.add_widget(self.batch_label)
+
+        # attach batch_value_label on grid_layout
+        self.batch_value_label = Label(text='')
+        self.grid_layout.add_widget(self.batch_value_label)
+
+        # attach option_label on grid_layout
+        self.option_label = Label(text='Options')
+        self.grid_layout.add_widget(self.option_label)
+
+        # attach option_layout on grid_layout
+        self.option_layout = BoxLayout(orientation = "horizontal")
+        self.grid_layout.add_widget(self.option_layout)
+
+        # for each option, attach a button on option_layout
+        self.OPTIONS = os.getenv("OPTIONS").split(",")
+        for option in self.OPTIONS:
+            self.option_button = ToggleButton(text=option, group='options')
+            self.option_layout.add_widget(self.option_button)
+            self.option_button.bind(state = self.show_option_price)
+
+        # attach calculation_label on grid_layout
+        self.calculation_label = Label(text='Calculation')
+        self.grid_layout.add_widget(self.calculation_label)
+
+        # attach calculation_value_label on grid_layout
+        self.calculation_value_label = Label(text='')
+        self.grid_layout.add_widget(self.calculation_value_label)
+
+        # attach total_price_label on grid_layout
+        self.total_price_label = Label(text='Total Price /Rp')
+        self.grid_layout.add_widget(self.total_price_label)
+
+        # attach total_price_value_label on grid_layout
+        self.total_price_value_label = Label(text='')
+        self.grid_layout.add_widget(self.total_price_value_label)
+
+        # attach payment_label on grid_layout
+        self.payment_label = Label(text='Payment (Dibayar) /Rp')
+        self.grid_layout.add_widget(self.payment_label)
+
+        # attach payment text value on grid_layout
+        self.grid_layout.payment = TextInput(multiline=False, input_filter="float", hint_text="25000")
+        self.grid_layout.add_widget(self.grid_layout.payment)
+        self.grid_layout.payment.bind(text = self.show_return_value)
+
+        # attach return_label on grid_layout
+        self.return_label = Label(text='Return (Kembali) /Rp')
+        self.grid_layout.add_widget(self.return_label)
+
+        # attach return_value_label on grid_layout
+        self.return_value_label = Label(text='')
+        self.grid_layout.add_widget(self.return_value_label)
+
+        # attach reset_button on grid_layout
+        self.reset_button = Button(text='Reset')
+        self.grid_layout.add_widget(self.reset_button)
+        self.reset_button.bind(on_press = self.reset)
+
+        # attach confirm_button on grid_layout
+        self.confirm_button = Button(text='Confirm')
+        self.grid_layout.add_widget(self.confirm_button)
+        self.confirm_button.bind(on_press = self.commit)
+
+    def exit(self, instance):
+        print('Exiting Application...')
+
+        self.reset(instance)
+
+        Window.size = (600, 300)
+        self.manager.transition.direction = "left"
+        self.manager.current = "login_screen"
+
+
+    def reset(self, instance):
+        # reset text input > will automatically call the appropriate callbacks and reset labels
+        self.grid_layout.name.text = ""
+        self.grid_layout.weight.text = ""
+        self.grid_layout.payment.text = ""
+
+    def show_batch_value(self, instance, weight):
+        if weight == "": weight = 0
+
+        # update batch and rounded_batch values
+        self.batch = float(weight) / float(os.getenv("BATCH_LIMIT"))
+        self.rounded_batch = math.ceil(self.batch)
+
+        # update BOTH batch_value_label and calculation_value_label (the part that has rounded_batch)
+        # print("Batch calculated as {} rounded to {}".format(self.batch, self.rounded_batch))
+        self.batch_value_label.text = "{} batch(es)".format(self.rounded_batch)
+        self.calculation_value_label.text = "{} x Rp. {}".format(self.rounded_batch, self.option_price)
+
+        self.show_total_price_value(instance, self.rounded_batch, self.option_price)
+        self.show_return_value(instance, self.grid_layout.payment.text)
+
+    def show_option_price(self, instance, state):
+        # if a toggle exists ("down"): get price of selected option, overriding initialized value of 0
+        if state == "down":
+            self.option = instance.text
+            self.option_price = int(os.getenv(instance.text))
+
+            # print('Option <{}> is selected with price: Rp. {}'.format(instance.text, self.option_price))
+
+            # update calculation_value_label text (the part that has option_price)
+            self.calculation_value_label.text = "{} x Rp. {}".format(self.rounded_batch, self.option_price)
+
+            self.show_total_price_value(instance, self.rounded_batch, self.option_price)
+            self.show_return_value(instance, self.grid_layout.payment.text)
+
+        # if not ("normal"), then reinitialize option_price to 0, still calculate with option_price = 0
+        else:
+            self.option = 0
+            self.option_price = 0
+            # print('Option <{}> is deselected.'.format(instance.text))
+
+            # update calculation_value_label text (the part that has option_price)
+            self.calculation_value_label.text = "{} x Rp. {}".format(self.rounded_batch, self.option_price)
+
+            self.show_total_price_value(instance, self.rounded_batch, self.option_price)
+            self.show_return_value(instance, self.grid_layout.payment.text)
+
+    def show_total_price_value(self, instance, batch, option_price):
+        # recalculate total price and update total_price_value_label text
+        self.total_price_value = self.rounded_batch * self.option_price
+        self.total_price_value_label.text = "Rp. {}".format(self.total_price_value)
+
+    def show_return_value(self, instance, payment):
+        if payment == "": payment = 0
+        # recalculate return_value and update its label accordingly
+        self.return_value = int(payment) - self.total_price_value
+        self.return_value_label.text = "Rp. {}".format(self.return_value)
+
+    def commit(self, instance):
+        # get validation
+        validation = self.get_validation()
+        if validation == False:
+            print("Validation has failed! This customer data is not registered.")
+
+        else:
+            # if validation == True append new_row to the correct book_path
+            book_path, df, label = self.get_current_month_book()
+            value_list = [self.date,
+                          self.index,
+                          self.grid_layout.name.text,
+                          self.grid_layout.weight.text,
+                          self.batch,
+                          self.rounded_batch,
+                          self.option,
+                          self.option_price,
+                          self.total_price_value,
+                          self.grid_layout.payment.text,
+                          self.return_value]
+            new_row = dict(zip(label, value_list))
+            df = df.append(new_row, ignore_index=True)
+            df.to_excel(book_path, index=False)
+            print('Committing {} to {}'.format(value_list, book_path))
+
+            # reset for next customer
+            print('Customer {} has been recorded!'.format(self.index))
+            self.reset(instance)
+
+            # update customer index
+            self.index += 1
+            self.index_label.text = "Customer No. {}".format(self.index)
+
+    def get_current_month_book(self):
+        # check if this month's book exist, if not create one
+        self.date = date.today().strftime("%d %B %Y")
+        book_title = "{}.xlsx".format(date.today().strftime("%B %Y"))
+        label = [ 'Date',
+                  'Index',
+                  'Name',
+                  'Weight',
+                  'Batch',
+                  'Batch (Rounded)',
+                  'Option',
+                  'Option Price',
+                  'Total Price',
+                  'Payment',
+                  'Return' ]
+
+        if book_title in os.listdir(self.data_path):
+            print('Loading {} in {}'.format(book_title, self.data_path))
+            book_path = os.path.join(self.data_path, book_title)
+            df = pd.read_excel(book_path, index=False)
+            return book_path, df, label
+        else:
+            print('Creating {} in {}'.format(book_title, self.data_path))
+            book_path = os.path.join(self.data_path, book_title)
+            df = pd.DataFrame(columns=label)
+            df.to_excel(book_path, index=False)
+            return book_path, df, label
+
+    def get_validation(self):
+        if len(self.grid_layout.weight.text) == 0:
+            print("No weight specified (kg).")
+            return False
+        elif self.rounded_batch == 0 or self.batch == 0:
+            print("0 Batches registered. There may be an error with script, please restart.")
+            return False
+        elif self.option == 0:
+            print("No option selected.")
+            return False
+        elif self.option_price == 0:
+            print("Option Price is 0. There may be an error when setting Option Price in .env file.")
+            return False
+        elif len(self.grid_layout.payment.text) == 0:
+            print("Payment value hasn't been specified.")
+            return False
+        elif self.return_value < 0:
+            print("Total Price exceeds payment. Please get more payment.")
+            return False
+        else: return True
+
+
+class MyApp(App):
+
+    def build(self):
+        self.title = 'Cash Registry'
+        sm = ScreenManager()
+
+        # attach login_screen to screen manager
+        login_screen = LoginScreen(name="login_screen")
+        sm.add_widget(login_screen)
+
+        # attach main_screen to screen manager
+        main_screen = MainScreen(name="main_screen")
+        sm.add_widget(main_screen)
+
+        return sm
+
+if __name__ == '__main__':
+
+    # load .env into os (can be called with os.getenv('KEY'))
+    env_path = Path(".env")
+    load_dotenv(dotenv_path=env_path)
+
+    MyApp().run()
