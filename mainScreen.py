@@ -22,6 +22,7 @@ class MainScreen(Screen):
 
         # initialize the following property values
         self.data_path = Path("data")
+        self.cache = os.path.join(self.data_path, "cache.txt")
         self.date = date.today().strftime("%d %B %Y")
         self.index = 1
         print('Initializing system for today: {}'.format(self.date))
@@ -225,21 +226,28 @@ class MainScreen(Screen):
         else:
             # if validation == True append new_row to the correct book_path
             book_path, df, label = self.get_current_month_book()
-            value_list = [self.date,
-                          self.index,
-                          self.grid_layout.name.text,
-                          self.grid_layout.weight.text,
-                          self.batch,
-                          self.rounded_batch,
-                          self.option,
-                          self.option_price,
-                          self.total_price_value,
-                          self.grid_layout.payment.text,
-                          self.return_value]
+            value_list = [str(self.date),
+                          str(self.index),
+                          str(self.grid_layout.name.text),
+                          str(self.grid_layout.weight.text),
+                          str(self.batch),
+                          str(self.rounded_batch),
+                          str(self.option),
+                          str(self.option_price),
+                          str(self.total_price_value),
+                          str(self.grid_layout.payment.text),
+                          str(self.return_value)]
+
             new_row = dict(zip(label, value_list))
             df = df.append(new_row, ignore_index=True)
             df.to_excel(book_path, index=False)
             print('Committing {} to {}'.format(value_list, book_path))
+
+            # write to cache as txt, this is read by claimScreen later on
+            with open(self.cache, 'a') as cache:
+                line = ','.join(value_list)
+                cache.write(f'{line}' + '\n')
+                print(f'Also recorded in {self.cache}')
 
             # reset for next customer
             print('Customer {} has been recorded!'.format(self.index))
