@@ -1,3 +1,5 @@
+import os
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
@@ -6,11 +8,19 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.checkbox import CheckBox
+
+from pathlib import Path
+from datetime import date
 
 class ClaimScreen(Screen):
 
   def __init__(self, **kwargs):
     super(ClaimScreen, self).__init__(**kwargs)
+    # initialize the following property values
+    self.data_path = Path("data")
+    self.cache = os.path.join(self.data_path, "cache.txt")
+    self.date = date.today().strftime("%d %B %Y")
 
     # attach claim_screen_layout on self
     self.claim_screen_layout = BoxLayout(orientation="vertical")
@@ -21,7 +31,7 @@ class ClaimScreen(Screen):
     self.claim_screen_layout.add_widget(self.claim_title_layout)
 
     # attach claim_title_label to claim_title_layout
-    self.claim_title_label = Label(text="Claim Screen")
+    self.claim_title_label = Label(text=f"[b]Claim Screen ({self.date})[/b]", markup=True)
     self.claim_title_layout.add_widget(self.claim_title_label)
 
     # scroll view here
@@ -32,9 +42,11 @@ class ClaimScreen(Screen):
     # attach scrollview_layout to scrollview
     self.scrollview_layout = GridLayout(cols = 1, size_hint = (1, None))
     self.scrollview_layout.bind(minimum_height = self.scrollview_layout.setter("height"))
+    self.scrollview.add_widget(self.scrollview_layout)
 
     # recover session data from data/cache.txt (just in case there was a restart/crash)
     # for each recovered session data, attach a label and a button
+    self.load_from_cache()
 
     # buttons here
     # attach claim_button_layout to claim_screen_layout
@@ -49,10 +61,39 @@ class ClaimScreen(Screen):
     # attach claim_button on claim_button_layout
     self.claim_button = Button(text='Claim')
     self.claim_button_layout.add_widget(self.claim_button)
-    self.claim_button.bind(on_press = self.main_screen)
+    self.claim_button.bind(on_press = self.reload_claims)
 
   def main_screen(self, instance):
     print('Accessing Main Sreen...')
     self.manager.transition.direction = "left"
     self.manager.current = "main_screen"
+
+  def reload_claims(self, instance):
+    self.load_from_cache()
+
+  def load_from_cache(self):
+    print(f'Loading cache from {self.cache}...')
+
+    # recover session data from data/cache.txt (just in case there was a restart/crash)
+    # for each recovered session data, attach a label and a button
+    with open(self.cache, 'r') as cache:
+      for count, line in enumerate(cache):
+        # attach scrollview_bubble to scrollview_layout
+        line = line.split(',')
+        self.scrollview_bubble = BoxLayout(orientation = "vertical", size_hint = (1, None))
+        self.scrollview_layout.add_widget(self.scrollview_bubble)
+
+        # attach scrollview_grid to scrollview_bubble
+        self.scrollview_grid = GridLayout(cols=2)
+        self.scrollview_bubble.add_widget(self.scrollview_grid)
+
+        # attach cache_label to scrollview_layout
+        self.cache_label = Label(text=line[2], halign='left')
+        self.scrollview_grid.add_widget(self.cache_label)
+
+        # attach cache_button to scrollview_layout
+        self.cache_checkbox = CheckBox(group='unclaimed', size_hint_x=None, width=100)
+        self.scrollview_grid.add_widget(self.cache_checkbox)
+        # self.cache_button.bind(state = self.show_option_price)
+
 
