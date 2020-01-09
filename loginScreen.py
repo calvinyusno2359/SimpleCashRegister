@@ -48,14 +48,14 @@ class LoginScreen(Screen):
 
     # callback methods here
 
-    def reset(self):
+    def reset(self, instance):
         self.grid_layout.username.text = ""
         self.grid_layout.password.text = ""
 
     def authenticate(self, instance):
-        self.check(self.grid_layout.username.text, self.grid_layout.password.text)
+        self.check(instance, self.grid_layout.username.text, self.grid_layout.password.text)
 
-    def check(self, username, password):
+    def check(self, instance, username, password):
         true_username = os.getenv("USER_NAME")[4:]
         true_password = os.getenv("PASSWORD")[4:]
 
@@ -72,4 +72,4 @@ class LoginScreen(Screen):
 
         else:
             print('Wrong Username and/or Password!')
-            self.reset()
+            self.reset(instance)
