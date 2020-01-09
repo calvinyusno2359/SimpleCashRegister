@@ -9,11 +9,12 @@ from pathlib import Path
 # import the two screens
 from loginScreen import LoginScreen
 from mainScreen import MainScreen
+from claimScreen import ClaimScreen
 
 class MyApp(App):
 
     def build(self):
-        self.title = 'Cash Registry'
+        self.title = 'Cash Register'
         sm = ScreenManager()
 
         # attach login_screen to screen manager
@@ -23,6 +24,10 @@ class MyApp(App):
         # attach main_screen to screen manager
         main_screen = MainScreen(name="main_screen")
         sm.add_widget(main_screen)
+
+        # attach claim_screen to screen manager
+        claim_screen = ClaimScreen(name="claim_screen")
+        sm.add_widget(claim_screen)
 
         return sm
 

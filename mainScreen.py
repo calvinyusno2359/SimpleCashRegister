@@ -132,6 +132,8 @@ class MainScreen(Screen):
         self.grid_layout.add_widget(self.confirm_button)
         self.confirm_button.bind(on_press = self.commit)
 
+    # callback methods here
+
     def exit(self, instance):
         print('Exiting Application...')
 
