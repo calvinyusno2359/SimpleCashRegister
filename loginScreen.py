@@ -48,7 +48,7 @@ class LoginScreen(Screen):
 
     # callback methods here
 
-    def reset(self, instance):
+    def reset(self):
         self.grid_layout.username.text = ""
         self.grid_layout.password.text = ""
 
@@ -72,4 +72,4 @@ class LoginScreen(Screen):
 
         else:
             print('Wrong Username and/or Password!')
-            self.reset(instance)
+            self.reset()

@@ -40,14 +40,23 @@ class MainScreen(Screen):
         self.grid_layout = GridLayout(cols=2)
         self.add_widget(self.grid_layout)
 
-        # attach index_label on grid_layout
-        self.index_label = Label(text="Customer No. {}".format(self.index))
-        self.grid_layout.add_widget(self.index_label)
-
         # attach exit_button on grid_layout
         self.exit_button = Button(text='Exit')
         self.grid_layout.add_widget(self.exit_button)
         self.exit_button.bind(on_press = self.exit)
+
+        # attach claim_screen_button on grid_layout
+        self.claim_screen_button = Button(text='Claim Screen')
+        self.grid_layout.add_widget(self.claim_screen_button)
+        self.claim_screen_button.bind(on_press = self.claim_screen)
+
+        # attach date_label on grid_layout
+        self.date_label = Label(text="{}".format(self.date))
+        self.grid_layout.add_widget(self.date_label)
+
+        # attach index_label on grid_layout
+        self.index_label = Label(text="Customer No. {}".format(self.index))
+        self.grid_layout.add_widget(self.index_label)
 
         # attach name_label on grid_layout
         self.name_label = Label(text='Customer Name (Nama Pelanggan)')
@@ -143,6 +152,11 @@ class MainScreen(Screen):
         self.manager.transition.direction = "left"
         self.manager.current = "login_screen"
 
+
+    def claim_screen(self, instance):
+        print('Accessing Claim Sreen...')
+        self.manager.transition.direction = "right"
+        self.manager.current = "claim_screen"
 
     def reset(self, instance):
         # reset text input > will automatically call the appropriate callbacks and reset labels
