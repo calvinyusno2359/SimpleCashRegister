@@ -63,9 +63,19 @@ class MainScreen(Screen):
         self.name_label = Label(text='Customer Name (Nama Pelanggan)')
         self.grid_layout.add_widget(self.name_label)
 
-        # attach name text value on grid_layout
+        # attach name text value on grid_layout + bind a callback to generate uid
         self.grid_layout.name = TextInput(multiline=False)
         self.grid_layout.add_widget(self.grid_layout.name)
+        self.grid_layout.name.bind(text=self.generate_uid)
+
+        # attach name_label on grid_layout
+        self.unique_id_label = Label(text='Customer Unique ID')
+        self.grid_layout.add_widget(self.unique_id_label)
+
+        # attach name text value on grid_layout + bind a callback to generate uid
+        self.grid_layout.unique_id = TextInput(multiline=False)
+        self.grid_layout.add_widget(self.grid_layout.unique_id)
+        #self.grid_layout.unique_id.bind(text=self.search_uid)
 
         # attach weight_label on grid_layout
         self.weight_label = Label(text='Weight (Berat) /kg')
@@ -216,6 +226,28 @@ class MainScreen(Screen):
         self.return_value = int(payment) - self.total_price_value
         self.return_value_label.text = "Rp. {}".format(self.return_value)
 
+    def on_enter(self):
+        '''required so that on startup, no value is written in this grid TextInput'''
+        self.grid_layout.unique_id.text = ""
+
+    def generate_uid(self, instance, name):
+        self.status = 'new'
+        self.max = int(os.getenv("MAX"))
+        self.offset = int(os.getenv("OFFSET"))
+        self.cuid = hex(self.max + self.offset)
+        self.grid_layout.unique_id.text = str(self.cuid).split('x')[1]
+
+    def search_uid(self, instance, uid):
+        # always reset name TextInput when uid is pressed, then search
+        self.grid_layout.name.text = ""
+        self.status = 'old'
+        print("blink")
+
+        # search for name
+        self.grid_layout.name.text = "Found!"
+        self.unique_id_label.text = "Customer Unique ID (Match Found!)"
+        pass
+
     def commit(self, instance):
         # get validation
         validation = self.get_validation()
@@ -227,6 +259,7 @@ class MainScreen(Screen):
             book_path, df, label = self.get_current_month_book()
             value_list = [str(self.date),
                           str(self.index),
+                          str(self.cuid),
                           str(self.grid_layout.name.text),
                           str(self.grid_layout.weight.text),
                           str(self.batch),
@@ -241,6 +274,13 @@ class MainScreen(Screen):
             df = df.append(new_row, ignore_index=True)
             df.to_excel(book_path, index=False)
             print('Committing {} to {}'.format(value_list, book_path))
+
+            # append to db if new, update max env vars as well
+            if self.status == 'new':
+                self.append_db()
+                self.max += 1
+                os.environ['MAX'] = str(self.max)
+            else: self.update_db()
 
             # write to cache as txt, this is read by claimScreen later on
             with open(self.cache, 'a') as cache:
@@ -262,6 +302,7 @@ class MainScreen(Screen):
         book_title = "{}.xlsx".format(date.today().strftime("%B %Y"))
         label = [ 'Date',
                   'Index',
+                  'Unique ID'
                   'Name',
                   'Weight',
                   'Batch',
@@ -305,4 +346,17 @@ class MainScreen(Screen):
             return False
         else: return True
 
+    def append_db(self):
+        label = ['Index', 'UID', 'History']
+        value_list = [self.max, self.cuid, 1]
 
+        db = os.path.join(self.data_path, "customers.xlsx")
+        df = pd.read_excel(db, index=False)
+        new_row = dict(zip(label, value_list))
+        df = df.append(new_row, ignore_index=True)
+
+        df.to_excel(db, index=False)
+        print('Committing {} to {}'.format(value_list, db))
+
+    def update_db(self):
+        pass
