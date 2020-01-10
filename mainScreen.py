@@ -153,7 +153,6 @@ class MainScreen(Screen):
         self.manager.transition.direction = "left"
         self.manager.current = "login_screen"
 
-
     def claim_screen(self, instance):
         print('Accessing Claim Sreen...')
         self.manager.transition.direction = "right"

@@ -30,9 +30,18 @@ class ClaimScreen(Screen):
     self.claim_title_layout = BoxLayout(orientation = "vertical", size_hint = (1, 0.1))
     self.claim_screen_layout.add_widget(self.claim_title_layout)
 
-    # attach claim_title_label to claim_title_layout
+    # attach claim_title_grid to scrollview_bubble
+    self.claim_title_grid = GridLayout(cols=2)
+    self.claim_title_layout.add_widget(self.claim_title_grid)
+
+    # attach claim_title_label to claim_title_grid
     self.claim_title_label = Label(text=f"[b]Claim Screen ({self.date})[/b]", markup=True)
-    self.claim_title_layout.add_widget(self.claim_title_label)
+    self.claim_title_grid.add_widget(self.claim_title_label)
+
+    # attach reload_button to claim_title_grid
+    self.reload_button = Button(text='Reload Claims', size_hint_x=0.2, width=100)
+    self.claim_title_grid.add_widget(self.reload_button)
+    self.reload_button.bind(on_press=self.reload_claims)
 
     # scroll view here
     # attach scrollview to claim_screen_layout
@@ -109,7 +118,6 @@ class ClaimScreen(Screen):
         self.cache_checkbox = CheckBox(group='unclaimed', size_hint_x=None, width=100, id=str(count))
         self.scrollview_grid.add_widget(self.cache_checkbox)
         self.cache_checkbox.bind(active=self.note_this_claim)
-        # self.cache_button.bind(state = self.show_option_price)
 
   def delete_cache_claim(self):
     with open(self.cache, "w") as cache:
@@ -128,4 +136,11 @@ class ClaimScreen(Screen):
     # reload from cache.txt
     self.load_from_cache()
 
+  def reload_claims(self, instance):
+    self.scrollview_layout.clear_widgets()
+    self.load_from_cache()
+    print(f'Claims have been reloaded!')
 
+  def on_enter(self):
+    self.scrollview_layout.clear_widgets()
+    self.load_from_cache()
