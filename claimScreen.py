@@ -69,6 +69,7 @@ class ClaimScreen(Screen):
     self.manager.current = "main_screen"
 
   def reload_claims(self, instance):
+    self.scrollview_layout.clear_widgets()
     self.load_from_cache()
 
   def load_from_cache(self):
@@ -78,8 +79,16 @@ class ClaimScreen(Screen):
     # for each recovered session data, attach a label and a button
     with open(self.cache, 'r') as cache:
       for count, line in enumerate(cache):
-        # attach scrollview_bubble to scrollview_layout
+
+        # format text accordingly here
         line = line.split(',')
+        text = f"""
+                  {line[0]} [Series] {line[2]}
+                  {line[5]} Batches (Rounded) - {line[3]} kg. Total: Rp. {line[8]}
+                ________________________________________________________________________
+                """
+
+        # attach scrollview_bubble to scrollview_layout
         self.scrollview_bubble = BoxLayout(orientation = "vertical", size_hint = (1, None))
         self.scrollview_layout.add_widget(self.scrollview_bubble)
 
@@ -88,7 +97,8 @@ class ClaimScreen(Screen):
         self.scrollview_bubble.add_widget(self.scrollview_grid)
 
         # attach cache_label to scrollview_layout
-        self.cache_label = Label(text=line[2], halign='left')
+        self.cache_label = Label(text=text, halign='left', size_hint=(1.0, 1.0))
+        self.cache_label.bind(size=self.cache_label.setter('text_size'))
         self.scrollview_grid.add_widget(self.cache_label)
 
         # attach cache_button to scrollview_layout
