@@ -61,24 +61,28 @@ class ClaimScreen(Screen):
     # attach claim_button on claim_button_layout
     self.claim_button = Button(text='Claim')
     self.claim_button_layout.add_widget(self.claim_button)
-    self.claim_button.bind(on_press = self.reload_claims)
+    self.claim_button.bind(on_press = self.resolve_claim)
 
   def main_screen(self, instance):
     print('Accessing Main Sreen...')
     self.manager.transition.direction = "left"
     self.manager.current = "main_screen"
 
-  def reload_claims(self, instance):
-    self.scrollview_layout.clear_widgets()
-    self.load_from_cache()
+  def note_this_claim(self, checkbox, value):
+    print(f'This claim id has been noted for claim: {checkbox.id}')
+    self.noted_claim = checkbox.id
 
   def load_from_cache(self):
     print(f'Loading cache from {self.cache}...')
 
     # recover session data from data/cache.txt (just in case there was a restart/crash)
     # for each recovered session data, attach a label and a button
+
+    self.claims = []
     with open(self.cache, 'r') as cache:
       for count, line in enumerate(cache):
+        # build a list of claims
+        self.claims.append(line)
 
         # format text accordingly here
         line = line.split(',')
@@ -102,8 +106,26 @@ class ClaimScreen(Screen):
         self.scrollview_grid.add_widget(self.cache_label)
 
         # attach cache_button to scrollview_layout
-        self.cache_checkbox = CheckBox(group='unclaimed', size_hint_x=None, width=100)
+        self.cache_checkbox = CheckBox(group='unclaimed', size_hint_x=None, width=100, id=str(count))
         self.scrollview_grid.add_widget(self.cache_checkbox)
+        self.cache_checkbox.bind(active=self.note_this_claim)
         # self.cache_button.bind(state = self.show_option_price)
+
+  def delete_cache_claim(self):
+    with open(self.cache, "w") as cache:
+      for i in range(len(self.claims)):
+        if i != int(self.noted_claim):
+            cache.write(self.claims[i])
+    print(f'This claim (id: {self.noted_claim}) has been successfully resolved!')
+
+  def resolve_claim(self, instance):
+    # clear all claims first
+    self.scrollview_layout.clear_widgets()
+
+    # delete 1 entry in dictionary then update cache.txt
+    self.delete_cache_claim()
+
+    # reload from cache.txt
+    self.load_from_cache()
 
 
