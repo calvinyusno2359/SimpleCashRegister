@@ -76,7 +76,7 @@ class MainScreen(Screen):
         # attach name text value on grid_layout + bind a callback to generate uid
         self.grid_layout.unique_id = TextInput(multiline=False)
         self.grid_layout.add_widget(self.grid_layout.unique_id)
-        #self.grid_layout.unique_id.bind(text=self.search_uid)
+        # self.grid_layout.unique_id.bind(text=self.search_uid)
 
         # attach weight_label on grid_layout
         self.weight_label = Label(text='Weight (Berat) /kg')
@@ -228,19 +228,22 @@ class MainScreen(Screen):
         self.return_value_label.text = "Rp. {}".format(self.return_value)
 
     def on_enter(self):
-        '''required so that on startup, no value is written in this grid TextInput'''
+        '''required so that on startup, no value is written in this grid TextInput and label is unmod'''
         self.grid_layout.unique_id.text = ""
+        self.unique_id_label.text = "Customer Unique ID"
 
     def generate_uid(self, instance, name):
         self.status = 'new'
 
         # we only get once, per start of TextInput
-        if len(name) == 1:
-            self.get_max()
+        if len(name) == 1: self.get_max()
 
         self.offset = int(os.getenv("OFFSET"))
         self.cuid = hex(self.max + self.offset)
-        self.grid_layout.unique_id.text = str(self.cuid).split('x')[1]
+
+        # show id in label if not empty
+        if len(name) != 0: self.unique_id_label.text = f"Customer Unique ID (New): {self.cuid}"
+        else: self.unique_id_label.text = "Customer Unique ID"
 
     def search_uid(self, instance, uid):
         # always reset name TextInput when uid is pressed, then search
@@ -293,7 +296,7 @@ class MainScreen(Screen):
             # reset for next customer
             print('Customer {} has been recorded!'.format(self.index))
             self.reset(instance)
-            self.grid_layout.unique_id.text = ""
+            self.unique_id_label.text = "Customer Unique ID"
 
             # update customer index
             self.index += 1
@@ -350,8 +353,8 @@ class MainScreen(Screen):
         else: return True
 
     def append_db(self):
-        label = ['Index', 'UID', 'History']
-        value_list = [self.max, self.cuid, 1]
+        label = ['Index', 'UID', 'Name', 'History']
+        value_list = [self.max, self.cuid, self.grid_layout.name.text, 1]
 
         # db = os.path.join(self.data_path, "customers.xlsx")
         # df = pd.read_excel(db, index=False)
