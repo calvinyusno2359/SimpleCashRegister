@@ -76,7 +76,7 @@ class MainScreen(Screen):
         # attach name text value on grid_layout + bind a callback to generate uid
         self.grid_layout.unique_id = TextInput(multiline=False)
         self.grid_layout.add_widget(self.grid_layout.unique_id)
-        # self.grid_layout.unique_id.bind(text=self.search_uid)
+        self.grid_layout.unique_id.bind(text=self.search_uid)
 
         # attach weight_label on grid_layout
         self.weight_label = Label(text='Weight (Berat) /kg')
@@ -233,28 +233,43 @@ class MainScreen(Screen):
         self.unique_id_label.text = "Customer Unique ID"
 
     def generate_uid(self, instance, name):
-        self.status = 'new'
+        '''Generate unique_id only if TextInput is empty'''
+        if self.grid_layout.unique_id.text == "":
+            self.status = 'new'
 
-        # we only get once, per start of TextInput
-        if len(name) == 1: self.get_max()
+            # we only get once, per start of TextInput
+            if len(name) == 1: self.get_max()
 
-        self.offset = int(os.getenv("OFFSET"))
-        self.cuid = hex(self.max + self.offset)
+            self.offset = int(os.getenv("OFFSET"))
+            self.cuid = hex(self.max + self.offset)
 
-        # show id in label if not empty
-        if len(name) != 0: self.unique_id_label.text = f"Customer Unique ID (New): {self.cuid}"
-        else: self.unique_id_label.text = "Customer Unique ID"
+            # show id in label if not empty
+            if len(name) != 0: self.unique_id_label.text = f"Customer Unique ID (New): {self.cuid}"
+            else: self.unique_id_label.text = "Customer Unique ID"
 
     def search_uid(self, instance, uid):
         # always reset name TextInput when uid is pressed, then search
         self.grid_layout.name.text = ""
         self.status = 'old'
-        print("blink")
 
-        # search for name
-        self.grid_layout.name.text = "Found!"
-        self.unique_id_label.text = "Customer Unique ID (Match Found!)"
-        pass
+        # search for id
+        try:
+            self.match = self.customers['UID'].str.match(f'0x{uid}')
+            customer = self.customers[self.match]
+            print(customer)
+
+        except:
+            print(f"Customer of ID: {uid} is not found")
+
+        finally:
+            # if 1 match, then process
+            if customer.shape[0] == 1:
+                self.grid_layout.name.text = str(customer.iloc[0]['Name'])
+                self.name_label.text = 'Customer Name (Match Found!)'
+
+                self.get_max()
+                self.cuid = f'0x{uid}'
+                print(f"Match found in customer db!\n{customer}")
 
     def commit(self, instance):
         # get validation
@@ -297,6 +312,7 @@ class MainScreen(Screen):
             print('Customer {} has been recorded!'.format(self.index))
             self.reset(instance)
             self.unique_id_label.text = "Customer Unique ID"
+            self.grid_layout.unique_id.text = ""
 
             # update customer index
             self.index += 1
@@ -353,8 +369,8 @@ class MainScreen(Screen):
         else: return True
 
     def append_db(self):
-        label = ['Index', 'UID', 'Name', 'History']
-        value_list = [self.max, self.cuid, self.grid_layout.name.text, 1]
+        label = ['UID', 'Name', 'History']
+        value_list = [self.cuid, self.grid_layout.name.text, 1]
 
         # db = os.path.join(self.data_path, "customers.xlsx")
         # df = pd.read_excel(db, index=False)
@@ -365,7 +381,13 @@ class MainScreen(Screen):
         print('Committing {} to {}'.format(value_list, self.db))
 
     def update_db(self):
-        pass
+        index = self.customers.index[self.customers[f'{self.cuid}']].tolist()
+        print(index)
+        # count = int(self.customers.iloc[index]['History']) + 1
+        # self.customers.iloc[self.match]['History'] = count
+
+        # self.customers.to_excel(self.db, index=False)
+        # print('Committing update for 0x{} to {}'.format(self.cuid, self.db))
 
     def get_max(self):
         self.db = os.path.join(self.data_path, "customers.xlsx")
