@@ -25,6 +25,7 @@ class MainScreen(Screen):
         self.cache = os.path.join(self.data_path, "cache.txt")
         self.date = date.today().strftime("%d %B %Y")
         self.index = 1
+        self.max = self.get_max()
         print('Initializing system for today: {}'.format(self.date))
         print('Data storage path: {}'.format(self.data_path))
 
@@ -232,7 +233,11 @@ class MainScreen(Screen):
 
     def generate_uid(self, instance, name):
         self.status = 'new'
-        self.max = int(os.getenv("MAX"))
+
+        # we only get once, per start of TextInput
+        if len(name) == 1:
+            self.get_max()
+
         self.offset = int(os.getenv("OFFSET"))
         self.cuid = hex(self.max + self.offset)
         self.grid_layout.unique_id.text = str(self.cuid).split('x')[1]
@@ -276,10 +281,7 @@ class MainScreen(Screen):
             print('Committing {} to {}'.format(value_list, book_path))
 
             # append to db if new, update max env vars as well
-            if self.status == 'new':
-                self.append_db()
-                self.max += 1
-                os.environ['MAX'] = str(self.max)
+            if self.status == 'new': self.append_db()
             else: self.update_db()
 
             # write to cache as txt, this is read by claimScreen later on
@@ -291,6 +293,7 @@ class MainScreen(Screen):
             # reset for next customer
             print('Customer {} has been recorded!'.format(self.index))
             self.reset(instance)
+            self.grid_layout.unique_id.text = ""
 
             # update customer index
             self.index += 1
@@ -350,13 +353,20 @@ class MainScreen(Screen):
         label = ['Index', 'UID', 'History']
         value_list = [self.max, self.cuid, 1]
 
-        db = os.path.join(self.data_path, "customers.xlsx")
-        df = pd.read_excel(db, index=False)
+        # db = os.path.join(self.data_path, "customers.xlsx")
+        # df = pd.read_excel(db, index=False)
         new_row = dict(zip(label, value_list))
-        df = df.append(new_row, ignore_index=True)
+        self.customers = self.customers.append(new_row, ignore_index=True)
 
-        df.to_excel(db, index=False)
-        print('Committing {} to {}'.format(value_list, db))
+        self.customers.to_excel(self.db, index=False)
+        print('Committing {} to {}'.format(value_list, self.db))
 
     def update_db(self):
         pass
+
+    def get_max(self):
+        self.db = os.path.join(self.data_path, "customers.xlsx")
+        self.customers = pd.read_excel(self.db, index=False)
+        self.max = self.customers.shape[0]
+        print(f"Successfully loaded customer db! Length: {self.max}")
+        return self.customers.shape[0]

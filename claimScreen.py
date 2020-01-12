@@ -96,7 +96,7 @@ class ClaimScreen(Screen):
         # format text accordingly here
         line = line.split(',')
         text = f"""
-                  {line[0]} [Series] {line[3]}
+                  {line[0]} [{line[2]}] {line[3]}
                   {line[6]} Batches (Rounded) - {line[4]} kg. Total: Rp. {line[9]}
                 ________________________________________________________________________
                 """
