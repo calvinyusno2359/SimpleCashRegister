@@ -349,7 +349,10 @@ class MainScreen(Screen):
             return book_path, df, label
 
     def get_validation(self):
-        if len(self.grid_layout.weight.text) == 0:
+        if self.grid_layout.name.text == "":
+            print("No name given! Please input a name!")
+            return False
+        elif len(self.grid_layout.weight.text) == 0:
             print("No weight specified (kg).")
             return False
         elif self.rounded_batch == 0 or self.batch == 0:
