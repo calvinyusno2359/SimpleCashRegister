@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
@@ -38,10 +39,10 @@ class ClaimScreen(Screen):
     self.claim_title_label = Label(text=f"[b]Claim Screen ({self.date})[/b]", markup=True)
     self.claim_title_grid.add_widget(self.claim_title_label)
 
-    # attach reload_button to claim_title_grid
-    self.reload_button = Button(text='Reload Claims', size_hint_x=0.2, width=100)
-    self.claim_title_grid.add_widget(self.reload_button)
-    self.reload_button.bind(on_press=self.reload_claims)
+    # attach delete_button to claim_title_grid
+    self.delete_button = Button(text='Delete', size_hint_x=0.2, width=100)
+    self.claim_title_grid.add_widget(self.delete_button)
+    self.delete_button.bind(on_press=self.delete_claim)
 
     # scroll view here
     # attach scrollview to claim_screen_layout
@@ -124,7 +125,6 @@ class ClaimScreen(Screen):
       for i in range(len(self.claims)):
         if i != int(self.noted_claim):
             cache.write(self.claims[i])
-    print(f'This claim (id: {self.noted_claim}) has been successfully resolved!')
 
   def resolve_claim(self, instance):
     # clear all claims first
@@ -132,6 +132,10 @@ class ClaimScreen(Screen):
 
     # delete 1 entry in dictionary then update cache.txt
     self.delete_cache_claim()
+
+    # write 'CLAIMED' status
+    self.append_claimed_status()
+    print(f'This claim (id: {self.noted_claim}) has been successfully resolved!')
 
     # reload from cache.txt
     self.load_from_cache()
@@ -143,4 +147,44 @@ class ClaimScreen(Screen):
 
   def on_enter(self):
     self.scrollview_layout.clear_widgets()
+    self.load_from_cache()
+
+  def append_claimed_status(self):
+    claim = self.claims[int(self.noted_claim)].split(',')
+    print(claim)
+
+    # retrieve book
+    book_title = f"{claim[0].split(' ')[1]} {claim[0].split(' ')[2]}.xlsx"
+    print('Loading {} in {}'.format(book_title, self.data_path))
+    book_path = os.path.join(self.data_path, book_title)
+    df = pd.read_excel(book_path, index=False)
+
+    # get correct row (index) of df
+    req = (df['Date'] == str(claim[0])) & (df['Unique ID'] == str(claim[2])) & (df['Index'] == int(claim[1])) & (df['Name'] == str(claim[3]))
+    print(req)
+
+    # update if exact match, otherwise show df and mark contention
+    index = df[req].index.tolist()
+    if len(index) == 1:
+      print(df[req])
+      index = index[0]
+      df['Status'][index] = "CLAIMED"
+      df.to_excel(book_path, index=False)
+    else:
+      print("ALERT! Multiple matches found! There is something wrong!")
+      print(df[req])
+      for i in index:
+        df['Status'][i] = "CONTENTION"
+      print("These has been marked as 'CONTENTION'")
+      df.to_excel(book_path, index=False)
+
+  def delete_claim(self, instance):
+    # clear all claims first
+    self.scrollview_layout.clear_widgets()
+
+    # delete 1 entry in dictionary then update cache.txt
+    self.delete_cache_claim()
+    print(f'This claim (id: {self.noted_claim}) has been successfully deleted!')
+
+    # reload from cache.txt
     self.load_from_cache()

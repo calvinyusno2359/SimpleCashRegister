@@ -294,7 +294,8 @@ class MainScreen(Screen):
                           str(self.option_price),
                           str(self.total_price_value),
                           str(self.grid_layout.payment.text),
-                          str(self.return_value)]
+                          str(self.return_value),
+                          str("UNCLAIMED")]
 
             new_row = dict(zip(label, value_list))
             df = df.append(new_row, ignore_index=True)
@@ -325,7 +326,7 @@ class MainScreen(Screen):
         book_title = "{}.xlsx".format(date.today().strftime("%B %Y"))
         label = [ 'Date',
                   'Index',
-                  'Unique ID'
+                  'Unique ID',
                   'Name',
                   'Weight',
                   'Batch',
@@ -334,7 +335,8 @@ class MainScreen(Screen):
                   'Option Price',
                   'Total Price',
                   'Payment',
-                  'Return' ]
+                  'Return',
+                  'Status' ]
 
         if book_title in os.listdir(self.data_path):
             print('Loading {} in {}'.format(book_title, self.data_path))
@@ -375,20 +377,19 @@ class MainScreen(Screen):
     def append_db(self):
         label = ['UID', 'Name', 'History', 'Last Date']
         value_list = [self.cuid, self.grid_layout.name.text, 1, str(self.date)]
-
         new_row = dict(zip(label, value_list))
-        self.customers = self.customers.append(new_row, ignore_index=True)
 
+        self.customers = self.customers.append(new_row, ignore_index=True)
         self.customers.to_excel(self.db, index=False)
         print('Committing {} to {}'.format(value_list, self.db))
 
     def update_db(self):
         index = self.customers.index[self.customers['UID'] == f'{self.cuid}'].tolist()[0]
         count = int(self.customers['History'][index]) + 1
+
         self.customers['History'][index] = count
         self.customers['Name'][index] = self.grid_layout.name.text
         self.customers['Last Date'][index] = str(self.date)
-
         self.customers.to_excel(self.db, index=False)
         print('Committing update for {} to {}'.format(self.cuid, self.db))
 
