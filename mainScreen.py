@@ -174,7 +174,9 @@ class MainScreen(Screen):
         self.grid_layout.name.text = ""
         self.grid_layout.weight.text = ""
         self.grid_layout.payment.text = ""
-        self.grid_layout.unique_id.text == ""
+        self.grid_layout.unique_id.text = ""
+        self.unique_id_label.text = "Customer Unique ID"
+        self.name_label.text = "Customer Name (Nama Pelanggan)"
 
     def show_batch_value(self, instance, weight):
         if weight == "": weight = 0
@@ -249,15 +251,15 @@ class MainScreen(Screen):
             else: self.unique_id_label.text = "Customer Unique ID"
 
     def search_uid(self, instance, uid):
-        # always reset name TextInput when uid is pressed, then search
+        # always reset name TextInput and label when uid is pressed, then search
         self.grid_layout.name.text = ""
+        self.name_label.text = "Customer Name (Nama Pelanggan)"
         self.status = 'old'
 
         # search for id
         try:
             self.match = self.customers['UID'].str.match(f'0x{uid}')
             customer = self.customers[self.match]
-            print(customer)
 
         except:
             print(f"Customer of ID: {uid} is not found")
@@ -299,7 +301,7 @@ class MainScreen(Screen):
             df.to_excel(book_path, index=False)
             print('Committing {} to {}'.format(value_list, book_path))
 
-            # append to db if new, update max env vars as well
+            # append to db if new or update if old customer
             if self.status == 'new': self.append_db()
             else: self.update_db()
 
@@ -312,8 +314,6 @@ class MainScreen(Screen):
             # reset for next customer
             print('Customer {} has been recorded!'.format(self.index))
             self.reset(instance)
-            self.unique_id_label.text = "Customer Unique ID"
-            self.grid_layout.unique_id.text = ""
 
             # update customer index
             self.index += 1
@@ -370,8 +370,8 @@ class MainScreen(Screen):
         else: return True
 
     def append_db(self):
-        label = ['UID', 'Name', 'History']
-        value_list = [self.cuid, self.grid_layout.name.text, 1]
+        label = ['UID', 'Name', 'History', 'Last Date']
+        value_list = [self.cuid, self.grid_layout.name.text, 1, str(self.date)]
 
         new_row = dict(zip(label, value_list))
         self.customers = self.customers.append(new_row, ignore_index=True)
@@ -383,6 +383,8 @@ class MainScreen(Screen):
         index = self.customers.index[self.customers['UID'] == f'{self.cuid}'].tolist()[0]
         count = int(self.customers['History'][index]) + 1
         self.customers['History'][index] = count
+        self.customers['Name'][index] = self.grid_layout.name.text
+        self.customers['Last Date'][index] = str(self.date)
 
         self.customers.to_excel(self.db, index=False)
         print('Committing update for {} to {}'.format(self.cuid, self.db))
