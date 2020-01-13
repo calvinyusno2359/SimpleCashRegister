@@ -174,6 +174,7 @@ class MainScreen(Screen):
         self.grid_layout.name.text = ""
         self.grid_layout.weight.text = ""
         self.grid_layout.payment.text = ""
+        self.grid_layout.unique_id.text == ""
 
     def show_batch_value(self, instance, weight):
         if weight == "": weight = 0
@@ -372,8 +373,6 @@ class MainScreen(Screen):
         label = ['UID', 'Name', 'History']
         value_list = [self.cuid, self.grid_layout.name.text, 1]
 
-        # db = os.path.join(self.data_path, "customers.xlsx")
-        # df = pd.read_excel(db, index=False)
         new_row = dict(zip(label, value_list))
         self.customers = self.customers.append(new_row, ignore_index=True)
 
@@ -381,13 +380,12 @@ class MainScreen(Screen):
         print('Committing {} to {}'.format(value_list, self.db))
 
     def update_db(self):
-        index = self.customers.index[self.customers[f'{self.cuid}']].tolist()
-        print(index)
-        # count = int(self.customers.iloc[index]['History']) + 1
-        # self.customers.iloc[self.match]['History'] = count
+        index = self.customers.index[self.customers['UID'] == f'{self.cuid}'].tolist()[0]
+        count = int(self.customers['History'][index]) + 1
+        self.customers['History'][index] = count
 
-        # self.customers.to_excel(self.db, index=False)
-        # print('Committing update for 0x{} to {}'.format(self.cuid, self.db))
+        self.customers.to_excel(self.db, index=False)
+        print('Committing update for {} to {}'.format(self.cuid, self.db))
 
     def get_max(self):
         self.db = os.path.join(self.data_path, "customers.xlsx")
