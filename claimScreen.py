@@ -18,7 +18,8 @@ class ClaimScreen(Screen):
   def __init__(self, **kwargs):
     super(ClaimScreen, self).__init__(**kwargs)
     # initialize the following property values
-    self.data_path = os.path.join(os.getcwd(), "data")
+    self.this_folder = os.path.dirname(os.path.abspath(__file__))
+    self.data_path = os.path.join(self.this_folder, "data")
     self.cache = os.path.join(self.data_path, "cache.txt")
     self.date = date.today().strftime("%d %B %Y")
 
