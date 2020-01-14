@@ -11,7 +11,6 @@ from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
 from kivy.core.window import Window
 
-from pathlib import Path
 from base64 import b64encode
 from datetime import date
 
@@ -21,7 +20,7 @@ class MainScreen(Screen):
         super(MainScreen, self).__init__(**kwargs)
 
         # initialize the following property values
-        self.data_path = Path("data")
+        self.data_path = os.path.join(os.getcwd(), "data")
         self.cache = os.path.join(self.data_path, "cache.txt")
         self.date = date.today().strftime("%d %B %Y")
         self.index = 1

@@ -11,7 +11,6 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.checkbox import CheckBox
 
-from pathlib import Path
 from datetime import date
 
 class ClaimScreen(Screen):
@@ -19,7 +18,7 @@ class ClaimScreen(Screen):
   def __init__(self, **kwargs):
     super(ClaimScreen, self).__init__(**kwargs)
     # initialize the following property values
-    self.data_path = Path("data")
+    self.data_path = os.path.join(os.getcwd(), "data")
     self.cache = os.path.join(self.data_path, "cache.txt")
     self.date = date.today().strftime("%d %B %Y")
 
